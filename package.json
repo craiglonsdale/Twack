@@ -1,7 +1,7 @@
 {
   "name": "twack",
   "version": "0.0.1",
-  "description": "A slack bot that will integrate with one (or more?) twich streams, delivering notifications and chat correspondance",
+  "description": "A slack bot that will integrate with one (or more?) twich streams, delivering notifications and chat correspondence",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

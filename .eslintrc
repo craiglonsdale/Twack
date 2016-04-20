@@ -1,0 +1,6 @@
+.{
+  "extends": "meerkats",
+  "rules": {
+    "strict": 0
+  }
+}
