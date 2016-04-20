@@ -1,3 +1,4 @@
+config.json
 lib-cov
 *.seed
 *.log
@@ -24,7 +25,7 @@ vendor/
 
 .sass-cache/
 public/
-
+build/
 # developer files
 
 .editorconfig
