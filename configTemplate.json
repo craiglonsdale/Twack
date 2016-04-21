@@ -1,4 +1,7 @@
 {
   "SlackApiKey": "",
-  "SlackBotId": ""
+  "TwitchClientId": "",
+  "TwitchClientSecret": "",
+  "TwitchApiKey": "",
+  "redirectUri": ""
 }
