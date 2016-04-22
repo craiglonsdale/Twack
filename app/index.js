@@ -6,6 +6,7 @@ import * as twitch from './lib/twitch';
 module.exports = (config) => {
   let twackId = null;
   let twackChannel = null;
+  let ircChannel = null;
   const token = config.SlackApiKey;
   const twack = slack.rtm.client();
   const twitchy = new Twitchy({
@@ -47,7 +48,12 @@ module.exports = (config) => {
         switch (command.toLowerCase()) {
           case 'join':
             twackChannel = msg.channel;
-            joinChannel(twitchy, twitchIrc, slack, token, msg);
+            joinChannel(twitchy, twitchIrc, slack, token, msg)
+              .then(channel => ircChannel = channel);
+            break;
+          case 'leave':
+            leaveChannel(twitchIrc, slack, token, ircChannel, msg);
+            ircChannel = null;
             break;
           default:
             console.log('???');
@@ -58,11 +64,17 @@ module.exports = (config) => {
   twack.listen({token});
 }
 
+function leaveChannel(twitchIrc, slack, token, ircChannel, msg) {
+  twitch.leaveStream(slack, token, msg.channel)
+  twitchIrc.part(ircChannel || '');
+};
+
 function joinChannel(twitchy, twitchIrc, slack, token, msg) {
   const [idReference, command, twitchUser] = msg.text.match(/\S+/g);
-  twitch.joinStream(twitchy, slack, token, twitchUser, msg.channel)
+  return twitch.joinStream(twitchy, slack, token, twitchUser, msg.channel)
     .then(stream => {
       twitchIrc.join(`#${stream.channel.display_name}`);
+      return stream.channel.display_name;
     })
     .catch(err => {
       console.log(`Failure ${err}`);
