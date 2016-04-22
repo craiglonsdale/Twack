@@ -1,10 +1,12 @@
 import slack from 'slack';
 import Twitchy from 'twitchy';
 import irc from 'tmi.js';
+import * as twitch from './lib/twitch';
 
 module.exports = (config) => {
   let twackId = null;
   let twackChannel = null;
+  const token = config.SlackApiKey;
   const twack = slack.rtm.client();
   const twitchy = new Twitchy({
     key: config.TwitchClientId,
@@ -21,7 +23,8 @@ module.exports = (config) => {
     }
   });
   twitchIrc.connect()
-    .then(data => console.log(`Joined: ${data}`));
+    .then(data => console.log(`Joined: ${data}`))
+    .catch(err => console.log(`Error: ${err}`));
   twitchIrc.on('chat', (channel, user, message, self) => {
     slack.chat.postMessage({
       token,
@@ -29,31 +32,39 @@ module.exports = (config) => {
       text: `[${channel}] <${user.username}>: ${message}`
     }, () => {});
   });
-  const token = config.SlackApiKey;
   twitchy.auth((err, access_token) => {
     if (!err) {
       console.log(`Authed using token: ${access_token}`);
     }
   });
+  // Get a copy of twack's slack ID
   twack.started(payload => twackId = payload.self.id);
+  // On message
   twack.message((msg) => {
-    if (msg.text) {
-      const match = msg.text.match(/\S+/g);
-      if (match && match[0].includes(twackId)) {
-        twitchy._get(`streams/${match[1]}`, (err, res) => {
-          const streamInfo = res.body;
-          twackChannel = msg.channel;
-          if (streamInfo.stream) {
-            slack.channels.setTopic({
-              token,
-              channel: msg.channel,
-              topic: `${streamInfo.stream.channel.display_name} - ${streamInfo.stream.game}`
-            }, () => {});
-            twitchIrc.join(`#${streamInfo.stream.channel.display_name}`);
-          }
-        });
+    if (msg.text && !msg.subtype) {
+      const [idReference, command, twitchUser] = msg.text.match(/\S+/g);
+      if (idReference.includes(twackId)) {
+        switch (command.toLowerCase()) {
+          case 'join':
+            twackChannel = msg.channel;
+            joinChannel(twitchy, twitchIrc, slack, token, msg);
+            break;
+          default:
+            console.log('???');
+        }
       }
     }
   });
   twack.listen({token});
+}
+
+function joinChannel(twitchy, twitchIrc, slack, token, msg) {
+  const [idReference, command, twitchUser] = msg.text.match(/\S+/g);
+  twitch.joinStream(twitchy, slack, token, twitchUser, msg.channel)
+    .then(stream => {
+      twitchIrc.join(`#${stream.channel.display_name}`);
+    })
+    .catch(err => {
+      console.log(`Failure ${err}`);
+    });
 }
