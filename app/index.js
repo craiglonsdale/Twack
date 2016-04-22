@@ -37,20 +37,22 @@ module.exports = (config) => {
   });
   twack.started(payload => twackId = payload.self.id);
   twack.message((msg) => {
-    const match = msg.text.match(/\S+/g);
-    if (match && match[0].includes(twackId)) {
-      twitchy._get(`streams/${match[1]}`, (err, res) => {
-        const streamInfo = res.body;
-        twackChannel = msg.channel;
-        if (streamInfo.stream) {
-          slack.channels.setTopic({
-            token,
-            channel: msg.channel,
-            topic: `${streamInfo.stream.channel.display_name} - ${streamInfo.stream.game}`
-          }, () => {});
-          twitchIrc.join(`#${streamInfo.stream.channel.display_name}`);
-        }
-      });
+    if (msg.text) {
+      const match = msg.text.match(/\S+/g);
+      if (match && match[0].includes(twackId)) {
+        twitchy._get(`streams/${match[1]}`, (err, res) => {
+          const streamInfo = res.body;
+          twackChannel = msg.channel;
+          if (streamInfo.stream) {
+            slack.channels.setTopic({
+              token,
+              channel: msg.channel,
+              topic: `${streamInfo.stream.channel.display_name} - ${streamInfo.stream.game}`
+            }, () => {});
+            twitchIrc.join(`#${streamInfo.stream.channel.display_name}`);
+          }
+        });
+      }
     }
   });
   twack.listen({token});
